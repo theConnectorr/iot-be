@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  # postgres:
+  #   container_name: db
+  #   image: postgres:latest
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: appuser
+  #     POSTGRES_PASSWORD: strong_db_password
+  #     POSTGRES_DB: iotdb
+  #   volumes:
+  #     - ./postgres/data:/var/lib/postgresql/data
+  #   networks:
+  #     - backend
+
+  mosquitto:
+    container_name: broker
+    image: eclipse-mosquitto:latest
+    restart: always
+    network_mode: "host"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mqtt-volumes/data:/mosquitto/data
+      - ./mqtt-volumes/log:/mosquitto/log
+    # ports:
+    #   - "1883:1883"
+
+  # nestjs:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   restart: always
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_HOST: postgres
+  #     DATABASE_PORT: 5432
+  #     DATABASE_USER: appuser
+  #     DATABASE_PASSWORD: strong_db_password
+  #     DATABASE_NAME: iotdb
+  #     MQTT_BROKER_URL: mqtt://mosquitto:1883 # internal container-to-container
+  #     MQTT_USERNAME: mqttuser
+  #     MQTT_PASSWORD: YOUR_MQTT_PASSWORD
+  #   depends_on:
+  #     - postgres
+  #     - mosquitto
+  #   networks:
+  #     - backend
+
+  # react:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   restart: always
+  #   networks:
+  #     - frontend
+  #     - backend
+
+  # nginx:
+  #   image: nginx:stable
+  #   restart: always
+  #   ports:
+  #     - '80:80'
+  #     - '443:443'
+  #   volumes:
+  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
+  #     - /etc/letsencrypt/live/api.example.com/fullchain.pem:/etc/letsencrypt/live/api.example.com/fullchain.pem:ro
+  #     - /etc/letsencrypt/live/api.example.com/privkey.pem:/etc/letsencrypt/live/api.example.com/privkey.pem:ro
+  #   depends_on:
+  #     - nestjs
+  #     - react
+  #   networks:
+  #     - frontend
+  #     - backend
+# networks:
+#   backend:
+#   frontend:
