@@ -8,6 +8,8 @@ import { MQTT_CLIENT } from "./mqtt.token"
 export class MqttService implements OnModuleDestroy {
   private message$ = new Subject<{ topic: string; payload: Buffer }>()
 
+  private sseStream$ = new Subject<{ topic: string; data: any }>()
+
   constructor(@Inject(MQTT_CLIENT) private client: MqttClient) {
     this.message$
       .pipe(throttleTime(50)) // tune as needed
@@ -16,6 +18,10 @@ export class MqttService implements OnModuleDestroy {
     this.client.on("message", (topic, payload) => {
       this.message$.next({ topic, payload })
     })
+  }
+
+  get sse$() {
+    return this.sseStream$.asObservable()
   }
 
   publish<T>(topic: string, message: T) {
@@ -44,6 +50,9 @@ export class MqttService implements OnModuleDestroy {
 
   private dispatch(topic: string, data: any) {
     console.log("[MQTT] dispatch", topic, data)
+
+    // 👉 Gửi message ra cho SSE client
+    this.sseStream$.next({ topic, data })
   }
 
   onModuleDestroy() {

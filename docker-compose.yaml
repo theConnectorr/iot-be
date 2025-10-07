@@ -18,13 +18,12 @@ services:
     container_name: broker
     image: eclipse-mosquitto:latest
     restart: always
-    network_mode: "host"
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./mqtt-volumes/data:/mosquitto/data
       - ./mqtt-volumes/log:/mosquitto/log
-    # ports:
-    #   - "1883:1883"
+    ports:
+      - "1883:1883"
 
   # nestjs:
   #   build:
