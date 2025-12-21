@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: strong_db_password
       POSTGRES_DB: iotdb
+    command: ["postgres", "-c", "log_statement=all"]
     ports:
       - "55432:5432"
     volumes:
