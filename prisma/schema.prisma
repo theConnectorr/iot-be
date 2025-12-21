@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. Bảng Người dùng (Phục vụ chức năng Đăng nhập/Đăng ký)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Lưu hash password, không lưu plain text
+  fullName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Quan hệ: Một user có thể thực hiện nhiều hành động
+  actions   ActionLog[]
+}
+
+// 2. Bảng Dữ liệu Cảm biến (Phục vụ vẽ biểu đồ lịch sử)
+// Dữ liệu này sẽ được đẩy từ MQTT -> Backend -> DB
+model SensorData {
+  id           Int      @id @default(autoincrement())
+  timestamp    DateTime @default(now())
+  
+  // Các thông số môi trường
+  temperature  Float?   // Nhiệt độ không khí (DHT11)
+  humidity     Float?   // Độ ẩm không khí (DHT11)
+  soilMoisture Int?     // Độ ẩm đất (%)
+  lightLevel   Int?     // Ánh sáng (Lux/Analog value)
+  waterLevel   Int?     // Mức nước bình chứa (cm hoặc %)
+
+  @@index([timestamp]) // Đánh index để query vẽ biểu đồ cho nhanh
+}
+
+// 3. Bảng Lịch sử Hoạt động (Phục vụ báo cáo và kiểm tra)
+// Lưu lại: Ai tưới cây? Tưới lúc nào? Hệ thống tự động hay thủ công?
+model ActionLog {
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  
+  type        String // TỰ ĐỘNG hay THỦ CÔNG
+  action      String     // Ví dụ: "BẬT_BƠM_1", "TẮT_BƠM_2", "CHE_NẮNG"
+  details     String?    // Chi tiết (vd: "Tưới do độ ẩm đất < 30%")
+  
+  // Quan hệ với User (nếu là hành động thủ công)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+}
+
+// 4. Bảng Cấu hình (Lưu các ngưỡng cài đặt)
+// Để người dùng chỉnh ngưỡng tưới tự động trên Web mà không cần nạp lại code ESP32
+model SystemConfig {
+  key         String   @id // Ví dụ: "SOIL_THRESHOLD_LOW"
+  value       String   // Ví dụ: "30"
+  description String?
+}

@@ -2,9 +2,9 @@ import { Module } from "@nestjs/common"
 import { MQTT_CLIENT } from "./mqtt.token"
 import { MqttClient, connect } from "mqtt"
 import { ConfigService } from "@nestjs/config"
-import { getConfigValue } from "src/libs/util/config.util"
 import { MqttController } from "./mqtt.controller"
 import { MqttService } from "./mqtt.service"
+import { getConfigValue } from "src/common/utils/config.util"
 
 @Module({
   controllers: [MqttController],
