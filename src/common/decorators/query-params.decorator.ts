@@ -18,11 +18,6 @@ export const QueryParams = createParamDecorator(
       delete params.sort
     }
 
-    params.xData = convertToObject(params, "xData")
-    if (params.xData === undefined) {
-      delete params.xData
-    }
-
     return params
   },
 )

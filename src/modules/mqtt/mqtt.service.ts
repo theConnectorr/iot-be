@@ -3,6 +3,16 @@ import { MqttClient } from "mqtt"
 import { Subject } from "rxjs"
 import { throttleTime } from "rxjs/operators"
 import { MQTT_CLIENT } from "./mqtt.token"
+import { PrismaService } from "src/common/prisma/prisma.service"
+
+export interface GardenData {
+  temperature?: number
+  humidity?: number
+  soilMoisture?: number
+  lightLevel?: number
+  waterLevel?: number
+  timestamp?: string
+}
 
 @Injectable()
 export class MqttService implements OnModuleDestroy {
@@ -10,7 +20,15 @@ export class MqttService implements OnModuleDestroy {
 
   private sseStream$ = new Subject<{ topic: string; data: any }>()
 
-  constructor(@Inject(MQTT_CLIENT) private client: MqttClient) {
+  constructor(
+    @Inject(MQTT_CLIENT) private client: MqttClient,
+    private readonly prisma: PrismaService,
+  ) {
+    this.client.subscribe("garden/sensors", (err, granted) => {
+      if (err) console.error("[MQTT] subscribe error", err)
+      else console.log("[MQTT] subscribed", granted)
+    })
+
     this.message$
       .pipe(throttleTime(50)) // tune as needed
       .subscribe(({ topic, payload }) => this.handleMessage(topic, payload))
@@ -36,10 +54,14 @@ export class MqttService implements OnModuleDestroy {
     })
   }
 
-  private handleMessage(topic: string, payload: Buffer) {
-    let data: any
+  private async handleMessage(topic: string, payload: Buffer) {
+    let data: GardenData
     try {
       data = JSON.parse(payload.toString())
+
+      await this.prisma.sensorData.create({
+        data,
+      })
     } catch (e) {
       console.warn("[MQTT] invalid JSON", topic, payload.toString())
       return

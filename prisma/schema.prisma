@@ -20,18 +20,15 @@ model User {
   actions   ActionLog[]
 }
 
-// 2. Bảng Dữ liệu Cảm biến (Phục vụ vẽ biểu đồ lịch sử)
-// Dữ liệu này sẽ được đẩy từ MQTT -> Backend -> DB
 model SensorData {
   id           Int      @id @default(autoincrement())
   timestamp    DateTime @default(now())
   
-  // Các thông số môi trường
-  temperature  Float?   // Nhiệt độ không khí (DHT11)
-  humidity     Float?   // Độ ẩm không khí (DHT11)
-  soilMoisture Int?     // Độ ẩm đất (%)
-  lightLevel   Int?     // Ánh sáng (Lux/Analog value)
-  waterLevel   Int?     // Mức nước bình chứa (cm hoặc %)
+  temperature  Float? 
+  humidity     Float? 
+  soilMoisture Int?   
+  lightLevel   Int?   
+  waterLevel   Int?   
 
   @@index([timestamp]) // Đánh index để query vẽ biểu đồ cho nhanh
 }
