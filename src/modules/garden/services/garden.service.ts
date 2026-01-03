@@ -6,7 +6,11 @@ import { SensorDataQueryParams } from "../api/presentation/garden.params"
 export class GardenService {
   constructor(private readonly prisma: PrismaService) {}
 
-  public async getSensorData(params?: SensorDataQueryParams) {
-    return this.prisma.sensorData.findMany({})
+  public async getSensorData(userId: string, params?: SensorDataQueryParams) {
+    return this.prisma.sensorData.findMany({
+      where: {
+        userId,
+      },
+    })
   }
 }

@@ -18,6 +18,7 @@ model User {
   
   // Quan hệ: Một user có thể thực hiện nhiều hành động
   actions   ActionLog[]
+  sensorData   SensorData[]
 }
 
 model SensorData {
@@ -28,13 +29,14 @@ model SensorData {
   humidity     Float? 
   soilMoisture Int?   
   lightLevel   Int?   
-  waterLevel   Int?   
+  waterLevel   Int?
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
 
   @@index([timestamp]) // Đánh index để query vẽ biểu đồ cho nhanh
 }
 
-// 3. Bảng Lịch sử Hoạt động (Phục vụ báo cáo và kiểm tra)
-// Lưu lại: Ai tưới cây? Tưới lúc nào? Hệ thống tự động hay thủ công?
 model ActionLog {
   id          Int      @id @default(autoincrement())
   timestamp   DateTime @default(now())
@@ -48,10 +50,8 @@ model ActionLog {
   user        User?    @relation(fields: [userId], references: [id])
 }
 
-// 4. Bảng Cấu hình (Lưu các ngưỡng cài đặt)
-// Để người dùng chỉnh ngưỡng tưới tự động trên Web mà không cần nạp lại code ESP32
 model SystemConfig {
-  key         String   @id // Ví dụ: "SOIL_THRESHOLD_LOW"
-  value       String   // Ví dụ: "30"
+  key         String   @id
+  value       String
   description String?
 }

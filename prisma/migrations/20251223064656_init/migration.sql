@@ -19,6 +19,7 @@ CREATE TABLE "SensorData" (
     "soilMoisture" INTEGER,
     "lightLevel" INTEGER,
     "waterLevel" INTEGER,
+    "userId" TEXT,
 
     CONSTRAINT "SensorData_pkey" PRIMARY KEY ("id")
 );
@@ -49,6 +50,9 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE INDEX "SensorData_timestamp_idx" ON "SensorData"("timestamp");
+
+-- AddForeignKey
+ALTER TABLE "SensorData" ADD CONSTRAINT "SensorData_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ActionLog" ADD CONSTRAINT "ActionLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

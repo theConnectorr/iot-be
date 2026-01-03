@@ -9,10 +9,7 @@ import { InvalidAccessTokenException } from "../exceptions/invalid-access-token.
 export class AccessAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
-  private readonly publicUrls: string[] = [
-    "/api/v1/analytics/revenue/zone",
-    "/api/v1/leaderboard/seller-by-revenue",
-  ]
+  private readonly publicUrls: string[] = []
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Request = context.switchToHttp().getRequest()
