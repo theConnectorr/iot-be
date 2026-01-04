@@ -6,6 +6,17 @@ import { AutomationService } from "./automation.service"
 import { Subject } from "rxjs"
 import { startOfHour } from "date-fns"
 
+export interface StandardizedSensorData {
+  temperature: number
+  humidity: number
+  lightLevel: number
+  soilMoisture: number
+  tankLevel: number
+  isWatering: boolean
+  isRefilling: boolean
+  awning: boolean
+}
+
 @Injectable()
 export class GardenService {
   private readonly logger = new Logger(GardenService.name)
@@ -42,7 +53,7 @@ export class GardenService {
       })
       if (!device) return
 
-      const data = JSON.parse(payload)
+      const stdData: StandardizedSensorData = JSON.parse(payload)
 
       // Làm tròn về đầu giờ
       const bucketTime = startOfHour(new Date())
@@ -70,27 +81,27 @@ export class GardenService {
                 count: n + 1,
                 temperature: this.calcAvg(
                   existingRecord.temperature,
-                  data.temperature,
+                  stdData.temperature,
                   n,
                 ),
                 humidity: this.calcAvg(
                   existingRecord.humidity,
-                  data.humidity,
+                  stdData.humidity,
                   n,
                 ),
                 soilMoisture: this.calcAvg(
                   existingRecord.soilMoisture,
-                  data.soilMoisture,
+                  stdData.soilMoisture,
                   n,
                 ),
                 lightLevel: this.calcAvg(
                   existingRecord.lightLevel,
-                  data.lightLevel,
+                  stdData.lightLevel,
                   n,
                 ),
-                waterLevel: this.calcAvg(
-                  existingRecord.waterLevel,
-                  data.waterLevel,
+                tankLevel: this.calcAvg(
+                  existingRecord.tankLevel,
+                  stdData.tankLevel,
                   n,
                 ),
               },
@@ -102,11 +113,11 @@ export class GardenService {
                 deviceId: device.id,
                 timestamp: bucketTime,
                 count: 1,
-                temperature: data.temperature,
-                humidity: data.humidity,
-                soilMoisture: data.soilMoisture,
-                lightLevel: data.lightLevel,
-                waterLevel: data.waterLevel,
+                temperature: stdData.temperature,
+                humidity: stdData.humidity,
+                soilMoisture: stdData.soilMoisture,
+                lightLevel: stdData.lightLevel,
+                tankLevel: stdData.tankLevel,
               },
             })
           }
@@ -127,12 +138,12 @@ export class GardenService {
       // === KẾT THÚC FIX ===
 
       // 3. Automation & SSE (Giữ nguyên)
-      await this.automationService.checkRules(device, data)
+      await this.automationService.checkRules(device, stdData)
 
       this.sensorDataSubject.next({
         deviceId: device.id,
         data: {
-          ...data,
+          ...stdData,
           timestamp: new Date(),
         },
       })

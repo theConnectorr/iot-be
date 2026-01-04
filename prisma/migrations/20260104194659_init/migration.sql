@@ -31,7 +31,7 @@ CREATE TABLE "SensorData" (
     "humidity" DOUBLE PRECISION DEFAULT 0,
     "soilMoisture" DOUBLE PRECISION DEFAULT 0,
     "lightLevel" DOUBLE PRECISION DEFAULT 0,
-    "waterLevel" DOUBLE PRECISION DEFAULT 0,
+    "tankLevel" DOUBLE PRECISION DEFAULT 0,
     "count" INTEGER NOT NULL DEFAULT 1,
     "deviceId" TEXT NOT NULL,
 
@@ -58,7 +58,6 @@ CREATE TABLE "AutomationRule" (
     "triggerSensor" TEXT NOT NULL,
     "condition" TEXT NOT NULL,
     "threshold" DOUBLE PRECISION NOT NULL,
-    "actionDevice" TEXT NOT NULL,
     "actionPayload" TEXT NOT NULL,
     "lastTriggered" TIMESTAMP(3),
     "cooldownSeconds" INTEGER NOT NULL DEFAULT 300,

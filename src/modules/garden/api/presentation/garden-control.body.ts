@@ -1,8 +1,14 @@
-import { IsOptional, IsString } from "class-validator"
+import { IsEnum, IsOptional, IsString } from "class-validator"
+
+enum DeviceAction {
+  WATER = "WATER",
+  REFILL = "REFILL",
+  AWNING = "AWNING",
+}
 
 export class GardenControlBody {
-  @IsString()
-  action: string
+  @IsEnum(DeviceAction)
+  action: DeviceAction
 
   @IsOptional()
   duration?: number

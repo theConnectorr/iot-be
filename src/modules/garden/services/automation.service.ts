@@ -5,6 +5,7 @@ import { MQTTService } from "src/modules/mqtt/mqtt.service"
 import { CreateAutomationRuleBody } from "../api/presentation/create-automation-rule.body"
 import { UpdateAutomationRuleBody } from "../api/presentation/update-automation-rule.body"
 import { AutomationRuleCreateInput } from "generated/prisma/models"
+import { StandardizedSensorData } from "./garden.service"
 
 @Injectable()
 export class AutomationService {
@@ -16,13 +17,7 @@ export class AutomationService {
     private readonly mqttService: MQTTService,
   ) {}
 
-  /**
-   * Hàm này được gọi từ GardenService sau khi đã lưu data cảm biến
-   * @param device Object chứa thông tin thiết bị (id, serialNumber)
-   * @param sensorData Object dữ liệu cảm biến mới nhất
-   */
-  async checkRules(device: Device, sensorData: any) {
-    // 1. Lấy tất cả luật ĐANG BẬT của thiết bị này
+  async checkRules(device: Device, sensorData: StandardizedSensorData) {
     const rules = await this.prisma.automationRule.findMany({
       where: {
         deviceId: device.id,
@@ -32,13 +27,16 @@ export class AutomationService {
 
     if (rules.length === 0) return
 
-    // 2. Duyệt từng luật để kiểm tra
     for (const rule of rules) {
       await this.evaluateRule(device, rule, sensorData)
     }
   }
 
-  private async evaluateRule(device: Device, rule: any, data: any) {
+  private async evaluateRule(
+    device: Device,
+    rule: any,
+    data: StandardizedSensorData,
+  ) {
     const currentValue = data[rule.triggerSensor]
 
     // Nếu gói tin không chứa sensor mà luật cần -> Bỏ qua
@@ -121,8 +119,7 @@ export class AutomationService {
       triggerSensor: body.triggerSensor,
       condition: body.condition,
       threshold: body.threshold,
-      actionDevice: body.actionDevice,
-      actionPayload: JSON.stringify(body.actionPayload),
+      actionPayload: body.actionPayload,
       cooldownSeconds: body.cooldownSeconds || 300,
       lastTriggered: null,
       device: { connect: { id: device.id } },
