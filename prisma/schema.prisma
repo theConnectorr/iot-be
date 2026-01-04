@@ -7,47 +7,84 @@ datasource db {
   provider = "postgresql"
 }
 
-// 1. Bảng Người dùng (Phục vụ chức năng Đăng nhập/Đăng ký)
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // Lưu hash password, không lưu plain text
-  fullName  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String   
+  fullName      String?
+  refreshToken  String?
   
-  // Quan hệ: Một user có thể thực hiện nhiều hành động
-  actions   ActionLog[]
-  sensorData   SensorData[]
+  device        Device?  
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Device {
+  id            String   @id @default(uuid())
+  name          String
+  serialNumber  String   @unique
+  
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  
+  sensorData    SensorData[]
+  actionLogs    ActionLog[]
+  automations   AutomationRule[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model SensorData {
   id           Int      @id @default(autoincrement())
-  timestamp    DateTime @default(now())
   
-  temperature  Float? 
-  humidity     Float? 
-  soilMoisture Int?   
-  lightLevel   Int?   
-  waterLevel   Int?
+  timestamp    DateTime @default(now()) 
+  
+  temperature  Float?   @default(0)
+  humidity     Float?   @default(0)
+  soilMoisture Float?   @default(0)
+  lightLevel   Float?   @default(0)
+  waterLevel   Float?   @default(0)
 
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
+  count        Int      @default(1)
 
-  @@index([timestamp]) // Đánh index để query vẽ biểu đồ cho nhanh
+  deviceId     String
+  device       Device   @relation(fields: [deviceId], references: [id])
+  
+  @@unique([deviceId, timestamp]) 
+  @@index([timestamp])
 }
 
 model ActionLog {
   id          Int      @id @default(autoincrement())
   timestamp   DateTime @default(now())
   
-  type        String // TỰ ĐỘNG hay THỦ CÔNG
-  action      String     // Ví dụ: "BẬT_BƠM_1", "TẮT_BƠM_2", "CHE_NẮNG"
-  details     String?    // Chi tiết (vd: "Tưới do độ ẩm đất < 30%")
+  type        String
+  action      String
+  details     String?
   
-  // Quan hệ với User (nếu là hành động thủ công)
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
+  deviceId     String
+  device       Device   @relation(fields: [deviceId], references: [id])
+}
+
+model AutomationRule {
+  id              Int      @id @default(autoincrement())
+  name            String
+  isActive        Boolean  @default(true)
+  
+  triggerSensor   String
+  condition       String
+  threshold       Float
+  
+  actionDevice    String
+  actionPayload   String
+  
+  lastTriggered   DateTime?
+  cooldownSeconds Int      @default(300)
+
+  deviceId     String
+  device       Device   @relation(fields: [deviceId], references: [id])
 }
 
 model SystemConfig {

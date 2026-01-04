@@ -1,83 +1,65 @@
-import { Inject, Injectable, OnModuleDestroy } from "@nestjs/common"
-import { MqttClient } from "mqtt"
-import { Subject } from "rxjs"
-import { throttleTime } from "rxjs/operators"
-import { MQTT_CLIENT } from "./mqtt.token"
-import { PrismaService } from "src/common/prisma/prisma.service"
-
-export interface GardenData {
-  temperature?: number
-  humidity?: number
-  soilMoisture?: number
-  lightLevel?: number
-  waterLevel?: number
-  timestamp?: string
-}
+import {
+  Injectable,
+  OnModuleInit,
+  Logger,
+  Inject,
+  forwardRef,
+} from "@nestjs/common"
+import * as mqtt from "mqtt"
+import { GardenService } from "src/modules/garden/services/garden.service"
 
 @Injectable()
-export class MqttService implements OnModuleDestroy {
-  private message$ = new Subject<{ topic: string; payload: Buffer }>()
+export class MQTTService implements OnModuleInit {
+  private client: mqtt.MqttClient
+  private readonly logger = new Logger(MQTTService.name)
 
-  private sseStream$ = new Subject<{ topic: string; data: any }>()
+  // Topic: devices/{serialNumber}/sensors
+  private readonly SUBSCRIBE_TOPIC = "devices/+/sensors"
 
   constructor(
-    @Inject(MQTT_CLIENT) private client: MqttClient,
-    private readonly prisma: PrismaService,
-  ) {
-    this.client.subscribe("garden/sensors", (err, granted) => {
-      if (err) console.error("[MQTT] subscribe error", err)
-      else console.log("[MQTT] subscribed", granted)
+    @Inject(forwardRef(() => GardenService))
+    private readonly gardenService: GardenService,
+  ) {}
+
+  onModuleInit() {
+    this.connect()
+  }
+
+  private connect() {
+    const host = process.env.MQTT_BROKER || "mqtt://localhost:1883"
+    this.client = mqtt.connect(host, {
+      clientId: "nestjs_gw_" + Math.random().toString(16).substr(2, 8),
     })
 
-    this.message$
-      .pipe(throttleTime(50)) // tune as needed
-      .subscribe(({ topic, payload }) => this.handleMessage(topic, payload))
+    this.client.on("connect", () => {
+      this.logger.log("✅ MQTT Gateway Connected")
+      this.client.subscribe(this.SUBSCRIBE_TOPIC)
+    })
 
-    this.client.on("message", (topic, payload) => {
-      this.message$.next({ topic, payload })
+    this.client.on("message", async (topic, message) => {
+      // Parse Topic: devices/ESP32_001/sensors
+      const parts = topic.split("/")
+      if (
+        parts.length === 3 &&
+        parts[0] === "devices" &&
+        parts[2] === "sensors"
+      ) {
+        const serialNumber = parts[1]
+
+        await this.gardenService.processIncomingData(
+          serialNumber,
+          message.toString(),
+        )
+      }
     })
   }
 
-  get sse$() {
-    return this.sseStream$.asObservable()
-  }
+  // Hàm gửi lệnh xuống (Chỉ gửi, không xử lý logic)
+  public publishCommand(serialNumber: string, payload: any) {
+    const topic = `devices/${serialNumber}/control`
 
-  publish<T>(topic: string, message: T) {
-    const payload = Buffer.from(JSON.stringify(message))
-    this.client.publish(topic, payload)
-  }
+    this.client.publish(topic, JSON.stringify(payload))
 
-  subscribe(topic: string) {
-    this.client.subscribe(topic, (err, granted) => {
-      if (err) console.error("[MQTT] subscribe error", err)
-      else console.log("[MQTT] subscribed", granted)
-    })
-  }
-
-  private async handleMessage(topic: string, payload: Buffer) {
-    let data: GardenData
-    try {
-      data = JSON.parse(payload.toString())
-
-      await this.prisma.sensorData.create({
-        data,
-      })
-    } catch (e) {
-      console.warn("[MQTT] invalid JSON", topic, payload.toString())
-      return
-    }
-
-    this.dispatch(topic, data)
-  }
-
-  private dispatch(topic: string, data: any) {
-    console.log("[MQTT] dispatch", topic, data)
-
-    // 👉 Gửi message ra cho SSE client
-    this.sseStream$.next({ topic, data })
-  }
-
-  onModuleDestroy() {
-    this.client.end()
+    this.logger.log(`📤 Sent to [${serialNumber}]: ${JSON.stringify(payload)}`)
   }
 }

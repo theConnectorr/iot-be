@@ -1,13 +1,13 @@
-import { Module } from "@nestjs/common"
+import { forwardRef, Module } from "@nestjs/common"
 import { MQTT_CLIENT } from "./mqtt.token"
 import { MqttClient, connect } from "mqtt"
 import { ConfigService } from "@nestjs/config"
-import { MqttController } from "./mqtt.controller"
-import { MqttService } from "./mqtt.service"
+import { MQTTService } from "./mqtt.service"
 import { getConfigValue } from "src/common/utils/config.util"
+import { GardenModule } from "../garden/garden.module"
 
 @Module({
-  controllers: [MqttController],
+  imports: [forwardRef(() => GardenModule)],
   providers: [
     {
       provide: MQTT_CLIENT,
@@ -45,7 +45,8 @@ import { getConfigValue } from "src/common/utils/config.util"
         return client
       },
     },
-    MqttService,
+    MQTTService,
   ],
+  exports: [MQTTService],
 })
 export class MQTTModule {}

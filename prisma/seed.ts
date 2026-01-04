@@ -12,26 +12,44 @@ const prisma = new PrismaClient({
 async function main() {
   console.log("🌱 Đang khởi tạo dữ liệu mẫu...")
 
-  // 1. Xóa dữ liệu cũ (Reset)
   await prisma.actionLog.deleteMany()
-  await prisma.sensorData.deleteMany() // Xóa data cảm biến nếu có
-  await prisma.user.deleteMany()
+  await prisma.sensorData.deleteMany()
+  await prisma.automationRule.deleteMany()
+  await prisma.device.deleteMany() // Xóa thiết bị
+  await prisma.user.deleteMany() // Xóa user
 
-  // 2. Tạo Admin
+  // 2. TẠO USER ADMIN & THIẾT BỊ TEST
   const salt = await bcrypt.genSalt()
   const hashedPassword = await bcrypt.hash("123456", salt)
 
-  await prisma.user.create({
+  const adminEmail = "admin@gmail.com"
+  const deviceSerial = "ESP32_TEST_001" // 🔥 KHỚP VỚI MOCK SCRIPT
+
+  const admin = await prisma.user.create({
     data: {
-      email: "admin@gmail.com",
+      email: adminEmail,
       password: hashedPassword,
       fullName: "Quản Trị Viên",
-      // hashedRefreshToken để null
+
+      // Tạo luôn Device gắn vào User này (Quan hệ 1-1)
+      device: {
+        create: {
+          name: "Vườn Thông Minh Demo",
+          serialNumber: deviceSerial,
+        },
+      },
+    },
+    include: {
+      device: true,
     },
   })
 
-  // 3. Tạo User ngẫu nhiên
-  const usersData = Array.from({ length: 10 }).map(() => ({
+  console.log(`✅ Đã tạo Admin: ${admin.email} / 123456`)
+  console.log(
+    `✅ Đã gắn Device: ${admin.device?.name} (Serial: ${admin.device?.serialNumber})`,
+  )
+
+  const usersData = Array.from({ length: 5 }).map(() => ({
     email: faker.internet.email(),
     password: hashedPassword,
     fullName: faker.person.fullName(),
@@ -41,12 +59,12 @@ async function main() {
     data: usersData,
   })
 
-  console.log("✅ Đã tạo xong: 1 Admin + 10 Users.")
+  console.log("✅ Đã tạo thêm 5 Users ngẫu nhiên (Chưa có thiết bị).")
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error("❌ Lỗi Seed:", e)
     process.exit(1)
   })
   .finally(async () => {

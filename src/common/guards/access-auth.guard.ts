@@ -16,14 +16,27 @@ export class AccessAuthGuard implements CanActivate {
 
     if (this.publicUrls.includes(request.path)) return true
 
-    const authHeader = request.headers.authorization
+    // 1. Khởi tạo biến accessToken
+    let accessToken: string | undefined
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // 2. Ưu tiên lấy từ Header (Bearer Token) - Dành cho API thường
+    const authHeader = request.headers.authorization
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      accessToken = authHeader.split(" ")[1]
+    }
+
+    // 3. Nếu Header không có, thử lấy từ Query Params - Dành cho SSE
+    // (Client gửi lên dạng: ?accessToken=xyz...)
+    if (!accessToken && request.query.accessToken) {
+      accessToken = request.query.accessToken as string
+    }
+
+    // 4. Nếu kiểm tra cả 2 nơi đều không có Token -> Lỗi Unauthorized
+    if (!accessToken) {
       throw new UnauthorizedException()
     }
 
-    const accessToken: string = authHeader.split(" ")[1]
-
+    // 5. Xác thực Token
     const tokenPayloadOption =
       await this.jwtService.verifyAccessToken(accessToken)
 

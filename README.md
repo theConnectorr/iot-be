@@ -91,4 +91,6 @@ docker exec -it broker mosquitto_pub -t "garden/control" -m "{\"action\": \"WATE
 
 ```
 
-Nhưng tốt nhất bạn cứ dùng **Terminal của WSL** (Ubuntu) để copy paste mấy lệnh ở trên cho nhanh và chuẩn nhé! Chúc bạn test thành công! 🚀
+```powershell
+docker exec -it iot-db psql -U appuser -d iotdb
+```
