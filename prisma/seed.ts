@@ -15,15 +15,14 @@ async function main() {
   await prisma.actionLog.deleteMany()
   await prisma.sensorData.deleteMany()
   await prisma.automationRule.deleteMany()
-  await prisma.device.deleteMany() // Xóa thiết bị
-  await prisma.user.deleteMany() // Xóa user
+  await prisma.device.deleteMany()
+  await prisma.user.deleteMany()
 
-  // 2. TẠO USER ADMIN & THIẾT BỊ TEST
   const salt = await bcrypt.genSalt()
   const hashedPassword = await bcrypt.hash("123456", salt)
 
   const adminEmail = "admin@gmail.com"
-  const deviceSerial = "ESP32_TEST_001" // 🔥 KHỚP VỚI MOCK SCRIPT
+  const deviceSerial = "esp32-95a7dbcc"
 
   const admin = await prisma.user.create({
     data: {

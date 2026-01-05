@@ -82,4 +82,10 @@ export class GardenController {
 
     return await this.gardenService.getActionLogs(user.id)
   }
+
+  @Post("claim") // POST /garden/claim
+  async claimDevice(@Req() req, @Body() body: { serialNumber: string }) {
+    const userId = req.user.id
+    return this.gardenService.claimDevice(userId, body.serialNumber)
+  }
 }

@@ -1,4 +1,10 @@
-import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator"
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from "class-validator"
 import { Condition, TriggerSensor } from "./create-automation-rule.body"
 
 export class UpdateAutomationRuleBody {
@@ -25,4 +31,8 @@ export class UpdateAutomationRuleBody {
   @IsOptional()
   @IsNumber()
   cooldownSeconds?: number
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean
 }

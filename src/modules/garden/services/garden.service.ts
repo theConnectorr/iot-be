@@ -1,4 +1,10 @@
-import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common"
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+} from "@nestjs/common"
 import { PrismaService } from "src/common/prisma/prisma.service"
 import { SensorDataQueryParams } from "../api/presentation/garden.params"
 import { MQTTService } from "src/modules/mqtt/mqtt.service"
@@ -196,5 +202,33 @@ export class GardenService {
         timestamp: "desc",
       },
     })
+  }
+
+  async claimDevice(userId: string, serialNumber: string) {
+    // 1. Kiểm tra thiết bị có tồn tại không
+    const device = await this.prisma.device.findUnique({
+      where: { serialNumber },
+      include: { user: true }, // Kèm thông tin chủ sở hữu hiện tại
+    })
+
+    if (!device) {
+      throw new BadRequestException("Device not found (Mã thiết bị không đúng)")
+    }
+
+    // 2. Kiểm tra thiết bị đã có chủ chưa
+    if (device.userId) {
+      if (device.userId === userId) {
+        return { message: "You already own this device" }
+      }
+      throw new BadRequestException("Device is already claimed by another user")
+    }
+
+    // 3. Gán thiết bị cho user
+    await this.prisma.device.update({
+      where: { id: device.id },
+      data: { userId: userId },
+    })
+
+    return { success: true, message: "Device claimed successfully!" }
   }
 }
