@@ -33,4 +33,4 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun run -r tsconfig-paths/register dist/src/main.js"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun dist/src/main.js"]

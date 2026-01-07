@@ -9,13 +9,8 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-
-    "rootDir": "src",
-
-    // --- QUAN TRỌNG 2: Định nghĩa gốc ---
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
-      // Định nghĩa rõ src/* trỏ vào đâu
       "src/*": ["src/*"]
     },
     "incremental": true,
