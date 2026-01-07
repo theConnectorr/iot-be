@@ -31,4 +31,4 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun run dist/main.js"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun run dist/src/main.js"]
