@@ -30,6 +30,8 @@ export class MQTTService implements OnModuleInit {
       ? `mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT || 1883}`
       : process.env.MQTT_BROKER || "mqtt://localhost:1883"
 
+    this.logger.log(`Attempting to connect to MQTT Broker at: [${host}]`)
+
     this.client = mqtt.connect(host, {
       clientId: "nestjs_gw_" + Math.random().toString(16).substr(2, 8),
     })
