@@ -38,6 +38,7 @@ export class MQTTService implements OnModuleInit {
 
     this.client.on("message", async (topic, message) => {
       // Parse Topic: devices/ESP32_001/sensors
+      this.logger.log(`Received [${topic}]: ${message.toString()}`)
       const parts = topic.split("/")
       if (
         parts.length === 3 &&
