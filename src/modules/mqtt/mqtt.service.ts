@@ -5,45 +5,39 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common"
-import * as mqtt from "mqtt"
+import { MqttClient } from "mqtt"
 import { GardenService } from "src/modules/garden/services/garden.service"
+import { MQTT_CLIENT } from "./mqtt.token"
 
 @Injectable()
 export class MQTTService implements OnModuleInit {
-  private client: mqtt.MqttClient
   private readonly logger = new Logger(MQTTService.name)
-
-  // Topic: devices/{serialNumber}/sensors
   private readonly SUBSCRIBE_TOPIC = "devices/+/sensors"
 
   constructor(
     @Inject(forwardRef(() => GardenService))
     private readonly gardenService: GardenService,
+
+    @Inject(MQTT_CLIENT) private readonly client: MqttClient,
   ) {}
 
   onModuleInit() {
-    this.connect()
+    this.registerListeners()
   }
 
-  private connect() {
-    const host = process.env.MQTT_HOST
-      ? `mqtt://${process.env.MQTT_HOST}:${process.env.MQTT_PORT || 1883}`
-      : process.env.MQTT_BROKER || "mqtt://localhost:1883"
-
-    this.logger.log(`Attempting to connect to MQTT Broker at: [${host}]`)
-
-    this.client = mqtt.connect(host, {
-      clientId: "nestjs_gw_" + Math.random().toString(16).substr(2, 8),
+  private registerListeners() {
+    this.client.subscribe(this.SUBSCRIBE_TOPIC, (err) => {
+      if (err) {
+        this.logger.error("Subscribe Failed:", err)
+      } else {
+        this.logger.log(`Subscribed to [${this.SUBSCRIBE_TOPIC}]`)
+      }
     })
 
-    this.client.on("connect", () => {
-      this.logger.log("✅ MQTT Gateway Connected")
-      this.client.subscribe(this.SUBSCRIBE_TOPIC)
-    })
-
+    // 2. Xử lý message
     this.client.on("message", async (topic, message) => {
-      // Parse Topic: devices/ESP32_001/sensors
-      this.logger.log(`Received [${topic}]: ${message.toString()}`)
+      this.logger.log(`📨 Received [${topic}]: ${message.toString()}`)
+
       const parts = topic.split("/")
       if (
         parts.length === 3 &&
@@ -51,7 +45,6 @@ export class MQTTService implements OnModuleInit {
         parts[2] === "sensors"
       ) {
         const serialNumber = parts[1]
-
         await this.gardenService.processIncomingData(
           serialNumber,
           message.toString(),
@@ -60,12 +53,9 @@ export class MQTTService implements OnModuleInit {
     })
   }
 
-  // Hàm gửi lệnh xuống (Chỉ gửi, không xử lý logic)
   public publishCommand(serialNumber: string, payload: any) {
     const topic = `devices/${serialNumber}/control`
-
     this.client.publish(topic, JSON.stringify(payload))
-
     this.logger.log(`📤 Sent to [${serialNumber}]: ${JSON.stringify(payload)}`)
   }
 }
