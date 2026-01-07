@@ -18,8 +18,6 @@ export const QueryParams = createParamDecorator(
       delete params.sort
     }
 
-    console.log("params: ", JSON.stringify(params, null, 4))
-
     return params
   },
 )

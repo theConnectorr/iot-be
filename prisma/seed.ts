@@ -10,7 +10,7 @@ const prisma = new PrismaClient({
 })
 
 async function main() {
-  console.log("🌱 Đang khởi tạo dữ liệu mẫu...")
+  console.log("Seeding example data...")
 
   await prisma.actionLog.deleteMany()
   await prisma.sensorData.deleteMany()
@@ -22,31 +22,16 @@ async function main() {
   const hashedPassword = await bcrypt.hash("123456", salt)
 
   const adminEmail = "admin@gmail.com"
-  const deviceSerial = "esp32-95a7dbcc"
 
   const admin = await prisma.user.create({
     data: {
       email: adminEmail,
       password: hashedPassword,
-      fullName: "Quản Trị Viên",
-
-      // Tạo luôn Device gắn vào User này (Quan hệ 1-1)
-      device: {
-        create: {
-          name: "Vườn Thông Minh Demo",
-          serialNumber: deviceSerial,
-        },
-      },
-    },
-    include: {
-      device: true,
+      fullName: "Super User",
     },
   })
 
-  console.log(`✅ Đã tạo Admin: ${admin.email} / 123456`)
-  console.log(
-    `✅ Đã gắn Device: ${admin.device?.name} (Serial: ${admin.device?.serialNumber})`,
-  )
+  console.log(`Admin created: ${admin.email} / 123456`)
 
   const usersData = Array.from({ length: 5 }).map(() => ({
     email: faker.internet.email(),
@@ -58,12 +43,12 @@ async function main() {
     data: usersData,
   })
 
-  console.log("✅ Đã tạo thêm 5 Users ngẫu nhiên (Chưa có thiết bị).")
+  console.log("Create 5 more random users.")
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Lỗi Seed:", e)
+    console.error("Seeding error:", e)
     process.exit(1)
   })
   .finally(async () => {

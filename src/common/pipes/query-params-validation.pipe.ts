@@ -15,7 +15,7 @@ export class QueryParamsValidationPipe implements PipeTransform {
 
     const errors: ValidationError[] = await validate(dto, {
       transform: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
       forbidUnknownValues: false,
       whitelist: true,
     })

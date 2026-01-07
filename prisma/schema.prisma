@@ -22,7 +22,6 @@ model User {
 
 model Device {
   id            String   @id @default(uuid())
-  name          String
   serialNumber  String   @unique
   
   userId        String   @unique

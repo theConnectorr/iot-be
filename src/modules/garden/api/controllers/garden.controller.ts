@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -37,7 +38,7 @@ export class GardenController {
     })
 
     if (!device) {
-      return new Observable()
+      throw new BadRequestException("User hasn't paired with any device yet")
     }
 
     return this.gardenService.sensorStream$.pipe(
@@ -84,8 +85,11 @@ export class GardenController {
   }
 
   @Post("claim") // POST /garden/claim
-  async claimDevice(@Req() req, @Body() body: { serialNumber: string }) {
-    const userId = req.user.id
+  async claimDevice(
+    @Req() req: Request,
+    @Body() body: { serialNumber: string },
+  ) {
+    const userId = req["user"].id
     return this.gardenService.claimDevice(userId, body.serialNumber)
   }
 }

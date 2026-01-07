@@ -10,7 +10,7 @@ import { SensorDataQueryParams } from "../api/presentation/garden.params"
 import { MQTTService } from "src/modules/mqtt/mqtt.service"
 import { AutomationService } from "./automation.service"
 import { Subject } from "rxjs"
-import { startOfHour } from "date-fns"
+import { startOfDay, startOfHour, subDays } from "date-fns"
 
 export interface StandardizedSensorData {
   temperature: number
@@ -40,12 +40,26 @@ export class GardenService {
   ) {}
 
   public async getSensorData(userId: string, params?: SensorDataQueryParams) {
+    let startDate = new Date()
+
+    const range = params?.filter?.range || "today"
+
+    if (range === "today") {
+      startDate = startOfDay(new Date())
+    } else if (range === "week") {
+      startDate = subDays(new Date(), 7)
+    } else if (range === "month") {
+      startDate = subDays(new Date(), 30)
+    }
+
     return this.prisma.sensorData.findMany({
       where: {
         device: {
           userId,
         },
+        timestamp: { gte: startDate },
       },
+      orderBy: { timestamp: "asc" },
       take: params?.limit,
       skip: params?.offset,
     })
@@ -170,17 +184,14 @@ export class GardenService {
   }
   // 2. HÀM ĐIỀU KHIỂN THIẾT BỊ (Gọi từ API Controller)
   async controlDevice(userId: string, actionPayload: any) {
-    // Tìm device của user này
     const device = await this.prisma.device.findUnique({
-      where: { userId }, // Vì 1 User chỉ có 1 Device nên query theo userId được
+      where: { userId },
     })
 
     if (!device) throw new Error("User chưa kết nối thiết bị!")
 
-    // Gửi lệnh qua Gateway
     this.mqttService.publishCommand(device.serialNumber, actionPayload)
 
-    // Lưu log
     await this.prisma.actionLog.create({
       data: {
         deviceId: device.id,
@@ -205,28 +216,55 @@ export class GardenService {
   }
 
   async claimDevice(userId: string, serialNumber: string) {
-    // 1. Kiểm tra thiết bị có tồn tại không
     const device = await this.prisma.device.findUnique({
       where: { serialNumber },
-      include: { user: true }, // Kèm thông tin chủ sở hữu hiện tại
+      include: { user: true },
     })
 
-    if (!device) {
-      throw new BadRequestException("Device not found (Mã thiết bị không đúng)")
-    }
-
-    // 2. Kiểm tra thiết bị đã có chủ chưa
-    if (device.userId) {
-      if (device.userId === userId) {
-        return { message: "You already own this device" }
-      }
+    if (device) {
       throw new BadRequestException("Device is already claimed by another user")
     }
 
-    // 3. Gán thiết bị cho user
-    await this.prisma.device.update({
-      where: { id: device.id },
-      data: { userId: userId },
+    const createdDevice = await this.prisma.device.create({
+      data: {
+        serialNumber,
+        userId,
+      },
+    })
+
+    await this.prisma.automationRule.createMany({
+      data: [
+        {
+          deviceId: createdDevice.id,
+          name: "Water tank refill",
+          isActive: true,
+          triggerSensor: "tankLevel",
+          condition: "LT",
+          threshold: 20,
+          actionPayload: JSON.stringify({ action: "REFILL", duration: 5000 }),
+          cooldownSeconds: 600,
+        },
+        {
+          deviceId: createdDevice.id,
+          name: "Water when the soil is dry",
+          isActive: true,
+          triggerSensor: "soilMoisture",
+          condition: "LT",
+          threshold: 30,
+          actionPayload: JSON.stringify({ action: "WATER", duration: 3000 }),
+          cooldownSeconds: 300,
+        },
+        {
+          deviceId: createdDevice.id,
+          name: "Awning open",
+          isActive: true,
+          triggerSensor: "lightLevel",
+          condition: "GT",
+          threshold: 3000,
+          actionPayload: JSON.stringify({ action: "AWNING", open: true }),
+          cooldownSeconds: 60,
+        },
+      ],
     })
 
     return { success: true, message: "Device claimed successfully!" }

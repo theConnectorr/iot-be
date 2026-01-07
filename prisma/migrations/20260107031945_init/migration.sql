@@ -14,7 +14,6 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "Device" (
     "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
     "serialNumber" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
