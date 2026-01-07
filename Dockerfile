@@ -4,6 +4,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./prisma.config.ts
+COPY tsconfig.ts ./tsconfig.ts
 
 RUN bun install --frozen-lockfile
 
@@ -28,6 +29,7 @@ COPY --from=builder /app/dist ./dist
 
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/tsconfig.ts ./tsconfig.ts
 
 EXPOSE 3000
 
